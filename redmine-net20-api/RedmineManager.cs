@@ -103,6 +103,52 @@ namespace Redmine.Net.Api
         };
 
         /// <summary>
+        /// 
+        /// </summary>
+        public static Dictionary<Type, string> Sufixes { get { return routes; } }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public string Host { get; private set; }
+
+        /// <summary>
+        ///     The ApiKey used to authenticate.
+        /// </summary>
+        public string ApiKey { get; private set; }
+
+        /// <summary>
+        /// Maximum page-size when retrieving complete object lists
+        /// <remarks>By default only 25 results can be retrieved per request. Maximum is 100. To change the maximum value set in your Settings -> General, "Objects per page options".By adding (for instance) 9999 there would make you able to get that many results per request.</remarks>
+        /// </summary>
+        public int PageSize { get; set; }
+
+        /// <summary>
+        /// As of Redmine 2.2.0 you can impersonate user setting user login (eg. jsmith). This only works when using the API with an administrator account, this header will be ignored when using the API with a regular user account.
+        /// </summary>
+        public string ImpersonateUser { get; set; }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public MimeFormat MimeFormat { get; private set; }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public IWebProxy Proxy { get; private set; }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public SecurityProtocolType SecurityProtocolType { get; private set; }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public X509Certificate ClientCertificate { get; private set; }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="RedmineManager"/> class.
         /// </summary>
         /// <param name="host">The host.</param>
@@ -155,6 +201,23 @@ namespace Redmine.Net.Api
         }
 
         /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="host"></param>
+        /// <param name="apiKey"></param>
+        /// <param name="clientCert"></param>
+        /// <param name="mimeFormat"></param>
+        /// <param name="verifyServerCert"></param>
+        /// <param name="proxy"></param>
+        /// <param name="securityProtocolType"></param>
+        public RedmineManager(string host, string apiKey, X509Certificate clientCert, MimeFormat mimeFormat = MimeFormat.Xml, bool verifyServerCert = true, IWebProxy proxy = null, SecurityProtocolType securityProtocolType = SecurityProtocolType.Ssl3)
+            : this(host, mimeFormat, verifyServerCert, proxy, securityProtocolType)
+        {
+            ApiKey = apiKey;
+            ClientCertificate = clientCert;
+        }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="RedmineManager"/> class.
         /// Most of the time, the API requires authentication. To enable the API-style authentication, you have to check Enable REST API in Administration -> Settings -> Authentication. Then, authentication can be done in 2 different ways:
         /// using your regular login/password via HTTP Basic authentication.
@@ -183,43 +246,25 @@ namespace Redmine.Net.Api
         /// <summary>
         /// 
         /// </summary>
-        public static Dictionary<Type, string> Sufixes { get { return routes; } }
+        /// <param name="host"></param>
+        /// <param name="login"></param>
+        /// <param name="password"></param>
+        /// <param name="clientCert"></param>
+        /// <param name="mimeFormat"></param>
+        /// <param name="verifyServerCert"></param>
+        /// <param name="proxy"></param>
+        /// <param name="securityProtocolType"></param>
+        public RedmineManager(string host, string login, string password, X509Certificate clientCert, MimeFormat mimeFormat = MimeFormat.Xml, bool verifyServerCert = true, IWebProxy proxy = null, SecurityProtocolType securityProtocolType = SecurityProtocolType.Ssl3)
+            : this(host, mimeFormat, verifyServerCert, proxy, securityProtocolType)
+        {
+            cache = new CredentialCache { { new Uri(host), "Basic", new NetworkCredential(login, password) } };
 
-        /// <summary>
-        /// 
-        /// </summary>
-        public string Host { get; private set; }
+            string token = Convert.ToBase64String(Encoding.UTF8.GetBytes(string.Format("{0}:{1}", login, password)));
+            basicAuthorization = string.Format("Basic {0}", token);
+            ClientCertificate = clientCert;
+        }
 
-        /// <summary>
-        ///     The ApiKey used to authenticate.
-        /// </summary>
-        public string ApiKey { get; private set; }
-
-        /// <summary>
-        /// Maximum page-size when retrieving complete object lists
-        /// <remarks>By default only 25 results can be retrieved per request. Maximum is 100. To change the maximum value set in your Settings -> General, "Objects per page options".By adding (for instance) 9999 there would make you able to get that many results per request.</remarks>
-        /// </summary>
-        public int PageSize { get; set; }
-
-        /// <summary>
-        /// As of Redmine 2.2.0 you can impersonate user setting user login (eg. jsmith). This only works when using the API with an administrator account, this header will be ignored when using the API with a regular user account.
-        /// </summary>
-        public string ImpersonateUser { get; set; }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        public MimeFormat MimeFormat { get; private set; }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        public IWebProxy Proxy { get; private set; }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        public SecurityProtocolType SecurityProtocolType { get; private set; }
+        
 
         /// <summary>
         /// Returns the user whose credentials are used to access the API.
@@ -614,6 +659,11 @@ namespace Redmine.Net.Api
             else
             {
                 webClient.Headers.Add(HttpRequestHeader.ContentType, "application/octet-stream");
+            }
+
+            if (ClientCertificate != null)
+            {
+                webClient.ClientCertificates = new X509CertificateCollection() {new X509Certificate(ClientCertificate)};
             }
 
             if (parameters != null)

@@ -16,6 +16,7 @@
 
 using System;
 using System.Net;
+using System.Security.Cryptography.X509Certificates;
 
 namespace Redmine.Net.Api
 {
@@ -47,6 +48,7 @@ namespace Redmine.Net.Api
                 httpWebRequest.Credentials = Credentials;
                 httpWebRequest.UserAgent = UA;
                 httpWebRequest.CachePolicy = CachePolicy;
+                httpWebRequest.ClientCertificates = ClientCertificates;
 
                 if (UseProxy)
                 {
@@ -76,6 +78,7 @@ namespace Redmine.Net.Api
         public CookieContainer CookieContainer { get; set; }
         public bool PreAuthenticate { get; set; }
         public bool KeepAlive { get; set; }
+        public  X509CertificateCollection ClientCertificates { get; set; }
 
     }
 }
